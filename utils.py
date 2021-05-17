@@ -20,6 +20,8 @@ from keras.layers import Embedding, Input, Dense, merge, Reshape, Flatten, Multi
 from keras.optimizers import Adam
 from keras.regularizers import l2
 
+pd.options.mode.chained_assignment = None  # default='warn'
+
 
 
 def get_playlists_df(number_of_files):
@@ -93,9 +95,9 @@ def get_negative_samples(training_df, all_unique_songs, number_of_neg_sample):
     neg_samples_for_a_playlist = possible_neg_samples[random_neg_sample_indices]
 
     for a_track in neg_samples_for_a_playlist:
-      all_neg_samples_list.append([playlist_id, a_track])
+      all_neg_samples_list.append([playlist_id, a_track, training_df[training_df['pid']==playlist_id]['artist_uri'].values[0]])
 
-  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['pid', 'track_uri'])
+  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['pid', 'track_uri', 'artist_uri'])
   all_neg_samples_df['interaction'] = 0
 
   return all_neg_samples_df
@@ -132,7 +134,7 @@ def get_negative_samples_test(training_df, all_unique_songs, number_of_neg_sampl
 
   """
   number_of_neg_sample : number of negative samples will be added for each playlist,
-                         or assign 'same' to add negative samples as much as number of positive samples for each playlist.
+                        or assign 'same' to add negative samples as much as number of positive samples for each playlist.
   """
 
   all_neg_samples_list = []
@@ -153,11 +155,10 @@ def get_negative_samples_test(training_df, all_unique_songs, number_of_neg_sampl
     neg_samples_for_a_playlist = possible_neg_samples[random_neg_sample_indices]
 
     for a_track in neg_samples_for_a_playlist:
-      all_neg_samples_list.append([p_id, a_track])
+      all_neg_samples_list.append([p_id, a_track, training_df[training_df['playlist_id']==p_id]['artist_id'].values[0]])
 
-  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['playlist_id', 'track_id'])
+  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['playlist_id', 'track_id', 'artist_id'])
   all_neg_samples_df['interaction'] = 0
-
   return all_neg_samples_df
 
 
