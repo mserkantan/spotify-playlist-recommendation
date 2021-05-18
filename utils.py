@@ -70,7 +70,8 @@ def get_all_songs_df(playlists_df):
 
 
 
-def get_negative_samples(training_df, all_unique_songs, number_of_neg_sample):
+
+def get_negative_samples(training_df, all_unique_songs, number_of_neg_sample=20, inp=["artist_uri"]):
 
   """
   number_of_neg_sample : number of negative samples will be added for each playlist,
@@ -80,24 +81,33 @@ def get_negative_samples(training_df, all_unique_songs, number_of_neg_sample):
   all_neg_samples_list = []
   all_pids = training_df['pid'].unique()
 
+  inp_dict = {i: training_df[i].unique() for i in inp}
+
   for playlist_id in tqdm(all_pids, position=0, leave=True):
 
     # tracks in corresponding playlist
     tracks_in_playlist = training_df[training_df.pid == playlist_id].track_uri.values
+    inp_in_playlist = {i: training_df[training_df.pid == playlist_id][i].values for i in inp}
 
     # take the difference between all unique songs and songs in the playlist to get possible neg samples 
     possible_neg_samples =  np.array(list( set(all_unique_songs) - set(tracks_in_playlist) ))
 
+    possible_neg_samples_inp = {i: np.array(list( set(inp_dict[i]) - set(inp_in_playlist[i]) )) for i in inp}
+
     # get indices of n neg random samples
     random_neg_sample_indices = np.random.randint(0, len(possible_neg_samples), size=(number_of_neg_sample,))
+
+    random_neg_sample_indices_inp = {i: np.random.randint(0, len(possible_neg_samples_inp[i]), size=(number_of_neg_sample,)) for i in inp}
 
     # get n neg random samples
     neg_samples_for_a_playlist = possible_neg_samples[random_neg_sample_indices]
 
-    for a_track in neg_samples_for_a_playlist:
-      all_neg_samples_list.append([playlist_id, a_track, training_df[training_df['pid']==playlist_id]['artist_uri'].values[0]])
+    neg_samples_for_a_playlist_inp = {i: possible_neg_samples_inp[i][random_neg_sample_indices_inp[i]] for i in inp}
 
-  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['pid', 'track_uri', 'artist_uri'])
+    for x, a_track in enumerate(neg_samples_for_a_playlist):
+      all_neg_samples_list.append([playlist_id, a_track] + [neg_samples_for_a_playlist_inp[i][x] for i in inp])
+
+  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['pid', 'track_uri'] + inp)
   all_neg_samples_df['interaction'] = 0
 
   return all_neg_samples_df
@@ -130,7 +140,7 @@ def get_test_samples(training_df, number_of_test_sample):
   return all_test_samples_indices
 
 
-def get_negative_samples_test(training_df, all_unique_songs, number_of_neg_sample):
+def get_negative_samples_test(training_df, all_unique_songs, number_of_neg_sample=99, inp=["artist_uri"]):
 
   """
   number_of_neg_sample : number of negative samples will be added for each playlist,
@@ -140,24 +150,32 @@ def get_negative_samples_test(training_df, all_unique_songs, number_of_neg_sampl
   all_neg_samples_list = []
   all_pids = training_df['playlist_id'].unique()
 
+  inp_dict = {i: training_df[i].unique() for i in inp}
+
   for p_id in tqdm(all_pids, position=0, leave=True):
 
     # tracks in corresponding playlist
     tracks_in_playlist = training_df[training_df.playlist_id == p_id].track_id.values
+    inp_in_playlist = {i: training_df[training_df.pid == p_id][i].values for i in inp}
 
     # take the difference between all unique songs and songs in the playlist to get possible neg samples 
     possible_neg_samples =  np.array(list( set(all_unique_songs) - set(tracks_in_playlist) ))
 
+    possible_neg_samples_inp = {i: np.array(list( set(inp_dict[i]) - set(inp_in_playlist[i]) )) for i in inp}
+
     # get indices of n neg random samples
     random_neg_sample_indices = np.random.randint(0, len(possible_neg_samples), size=(number_of_neg_sample,))
 
+    random_neg_sample_indices_inp = {i: np.random.randint(0, len(possible_neg_samples_inp[i]), size=(number_of_neg_sample,)) for i in inp}
     # get n neg random samples
     neg_samples_for_a_playlist = possible_neg_samples[random_neg_sample_indices]
 
-    for a_track in neg_samples_for_a_playlist:
-      all_neg_samples_list.append([p_id, a_track, training_df[training_df['playlist_id']==p_id]['artist_id'].values[0]])
+    neg_samples_for_a_playlist_inp = {i: possible_neg_samples_inp[i][random_neg_sample_indices_inp[i]] for i in inp}
 
-  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['playlist_id', 'track_id', 'artist_id'])
+    for x, a_track in enumerate(neg_samples_for_a_playlist):
+      all_neg_samples_list.append([p_id, a_track] + [neg_samples_for_a_playlist_inp[i][x] for i in inp])
+
+  all_neg_samples_df = pd.DataFrame(data = all_neg_samples_list, columns=['playlist_id', 'track_id'] + inp)
   all_neg_samples_df['interaction'] = 0
   return all_neg_samples_df
 
